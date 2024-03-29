@@ -233,27 +233,49 @@ class WebServer {
         }
 
         else if (request.contains("github?")) {
-          // pulls the query from the request and runs it with GitHub's REST API
-          // check out https://docs.github.com/rest/reference/
-          //
-          // HINT: REST is organized by nesting topics. Figure out the biggest one first,
-          //     then drill down to what you care about
-          // "Owner's repo is named RepoName. Example: find RepoName's contributors" translates to
-          //     "/repos/OWNERNAME/REPONAME/contributors"
-
           Map<String, String> query_pairs = new LinkedHashMap<String, String>();
           query_pairs = splitQuery(request.replace("github?", ""));
-          String json = fetchURL("https://api.github.com/" + query_pairs.get("query"));
-          System.out.println(json);
+            
+          // Attempt to fetch and parse GitHub API response
+          try {
+              String queryPath = query_pairs.get("query");
+              if (queryPath != null && !queryPath.isEmpty()) {
+                  String json = fetchURL("https://api.github.com/" + queryPath);
+                  
+                  // Parse JSON response
+                  JSONArray repos = new JSONArray(json);
+                  StringBuilder responseContent = new StringBuilder("<html><body>");
+                  responseContent.append("<h2>GitHub Repositories</h2>");
+                  responseContent.append("<ul>");
+                  
+                  for (int i = 0; i < repos.length(); i++) {
+                      JSONObject repo = repos.getJSONObject(i);
+                      responseContent.append("<li>");
+                      responseContent.append("Name: ").append(repo.getString("full_name"));
+                      responseContent.append(", ID: ").append(repo.getInt("id"));
+                      responseContent.append(", Owner: ").append(repo.getJSONObject("owner").getString("login"));
+                      responseContent.append("</li>");
+                  }
+                  
+                  responseContent.append("</ul>");
+                  responseContent.append("</body></html>");
+                  
+                  builder.append("HTTP/1.1 200 OK\n");
+                  builder.append("Content-Type: text/html; charset=utf-8\n");
+                  builder.append("\n");
+                  builder.append(responseContent.toString());
+              } else {
+                  throw new IllegalArgumentException("Query parameter 'query' is required");
+              }
+          } catch (Exception e) {
+              builder.append("HTTP/1.1 400 Bad Request\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+              builder.append("<html><body><h2>Error processing GitHub request:</h2><p>").append(e.getMessage()).append("</p></body></html>");
+          }
+      }
 
-          builder.append("HTTP/1.1 200 OK\n");
-          builder.append("Content-Type: text/html; charset=utf-8\n");
-          builder.append("\n");
-          builder.append("Check the todos mentioned in the Java source file");
-          // TODO: Parse the JSON returned by your fetch and create an appropriate
-          // response based on what the assignment document asks for
-
-        } else {
+        else {
           // if the request is not recognized at all
 
           builder.append("HTTP/1.1 400 Bad Request\n");
