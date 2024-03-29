@@ -25,6 +25,12 @@ import java.util.Random;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.nio.charset.Charset;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 
 class WebServer {
   public static void main(String args[]) {
@@ -233,27 +239,41 @@ class WebServer {
         }
 
         else if (request.contains("github?")) {
-            // Extract query from the request
             Map<String, String> query_pairs = new LinkedHashMap<String, String>();
             query_pairs = splitQuery(request.replace("github?", ""));
-            
-            // Fetch data from GitHub API
-            String jsonResponse = fetchURL("https://api.github.com/users/" + query_pairs.get("query"));
+            String json = fetchURL("https://api.github.com/" + query_pairs.get("query"));
 
-            // Simple approach to check if user exists by looking for a specific field in the response
-            if (jsonResponse.contains("\"login\":")) {
-                // If the response contains "login", we assume it's a valid user object
-                // Extracting a simple piece of data - the public repos count
-                // This is still fragile and not recommended for production use
-                String publicRepos = extractValue(jsonResponse, "\"public_repos\":", ",");
-                String responseText = "Public repositories count: " + publicRepos;
-                
-                response = buildHttpResponse(200, "OK", "text/html", responseText);
+            // Use Gson to parse the JSON response
+            JsonParser parser = new JsonParser();
+            JsonElement tree = parser.parse(json);
+
+            if (tree.isJsonArray()) {
+                JsonArray repos = tree.getAsJsonArray();
+
+                for (JsonElement repo : repos) {
+                    JsonObject repoObj = repo.getAsJsonObject();
+
+                    String fullName = repoObj.get("full_name").getAsString();
+                    String id = repoObj.get("id").getAsString();
+                    String ownerLogin = repoObj.getAsJsonObject("owner").get("login").getAsString();
+
+                    // Build your response HTML with this data
+                    builder.append("<p>");
+                    builder.append("Full Name: ").append(fullName).append(", ");
+                    builder.append("ID: ").append(id).append(", ");
+                    builder.append("Owner: ").append(ownerLogin);
+                    builder.append("</p>");
+                }
+
+                // Prepare the HTTP response
+                response = ("HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\n\n" + builder.toString()).getBytes();
             } else {
-                // Handle user not found or API error
-                response = buildHttpResponse(404, "Not Found", "text/html", "User not found or API error.");
+                // Handle the case where the JSON is not an array (e.g., error message)
+                response = ("HTTP/1.1 500 Internal Server Error\nContent-Type: text/html; charset=utf-8\n\nError parsing GitHub response").getBytes();
             }
         }
+
+
 
         else {
           // if the request is not recognized at all
@@ -379,21 +399,6 @@ class WebServer {
     }
     return sb.toString();
   }
-  private byte[] buildHttpResponse(int statusCode, String statusText, String contentType, String body) {
-	    String httpResponse = "HTTP/1.1 " + statusCode + " " + statusText + "\n" +
-	                          "Content-Type: " + contentType + "; charset=utf-8\n" +
-	                          "\n" + body;
-	    return httpResponse.getBytes();
-	}
-  
-  //Utility method to extract value from a string based on start and end delimiters
-  public static String extractValue(String source, String startDelimiter, String endDelimiter) {
-	int start = source.indexOf(startDelimiter) + startDelimiter.length();
-	int end = source.indexOf(endDelimiter, start);
-	if (start == -1 || end == -1) {
-		return "Not found";
-	}
-	return source.substring(start, end);
-  }
+
   
 }
