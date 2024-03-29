@@ -233,46 +233,30 @@ class WebServer {
         }
 
         else if (request.contains("github?")) {
-          Map<String, String> query_pairs = new LinkedHashMap<String, String>();
-          query_pairs = splitQuery(request.replace("github?", ""));
+        	Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+            query_pairs = splitQuery(request.replace("github?", ""));
+            String jsonResponse = fetchURL("https://api.github.com/" + query_pairs.get("query"));
             
-          // Attempt to fetch and parse GitHub API response
-          try {
-              String queryPath = query_pairs.get("query");
-              if (queryPath != null && !queryPath.isEmpty()) {
-                  String json = fetchURL("https://api.github.com/" + queryPath);
-                  
-                  // Parse JSON response
-                  JSONArray repos = new JSONArray(json);
-                  StringBuilder responseContent = new StringBuilder("<html><body>");
-                  responseContent.append("<h2>GitHub Repositories</h2>");
-                  responseContent.append("<ul>");
-                  
-                  for (int i = 0; i < repos.length(); i++) {
-                      JSONObject repo = repos.getJSONObject(i);
-                      responseContent.append("<li>");
-                      responseContent.append("Name: ").append(repo.getString("full_name"));
-                      responseContent.append(", ID: ").append(repo.getInt("id"));
-                      responseContent.append(", Owner: ").append(repo.getJSONObject("owner").getString("login"));
-                      responseContent.append("</li>");
-                  }
-                  
-                  responseContent.append("</ul>");
-                  responseContent.append("</body></html>");
-                  
-                  builder.append("HTTP/1.1 200 OK\n");
-                  builder.append("Content-Type: text/html; charset=utf-8\n");
-                  builder.append("\n");
-                  builder.append(responseContent.toString());
-              } else {
-                  throw new IllegalArgumentException("Query parameter 'query' is required");
-              }
-          } catch (Exception e) {
-              builder.append("HTTP/1.1 400 Bad Request\n");
-              builder.append("Content-Type: text/html; charset=utf-8\n");
-              builder.append("\n");
-              builder.append("<html><body><h2>Error processing GitHub request:</h2><p>").append(e.getMessage()).append("</p></body></html>");
-          }
+            // Simple and very fragile JSON parsing
+            ArrayList<String> repoDetails = new ArrayList<>();
+            String[] repos = jsonResponse.split("\\},\\{");
+            for (String repo : repos) {
+                String full_name = extractValue(repo, "\"full_name\":\"", "\",");
+                String id = extractValue(repo, "\"id\":", ",");
+                String login = extractValue(repo, "\"login\":\"", "\"");
+                
+                repoDetails.add("Full Name: " + full_name + ", ID: " + id + ", Owner Login: " + login);
+            }
+            
+            StringBuilder responseBuilder = new StringBuilder();
+            responseBuilder.append("HTTP/1.1 200 OK\n");
+            responseBuilder.append("Content-Type: text/html; charset=utf-8\n");
+            responseBuilder.append("\n");
+            for (String detail : repoDetails) {
+                responseBuilder.append(detail).append("<br/>");
+            }
+            
+            response = responseBuilder.toString().getBytes();
       }
 
         else {
@@ -399,4 +383,14 @@ class WebServer {
     }
     return sb.toString();
   }
+  //Utility method to extract value from a string based on start and end delimiters
+  public static String extractValue(String source, String startDelimiter, String endDelimiter) {
+	int start = source.indexOf(startDelimiter) + startDelimiter.length();
+	int end = source.indexOf(endDelimiter, start);
+	if (start == -1 || end == -1) {
+		return "Not found";
+	}
+	return source.substring(start, end);
+  }
+  
 }
