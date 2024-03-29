@@ -194,30 +194,45 @@ class WebServer {
             builder.append("File not found: " + file);
           }
         } else if (request.contains("multiply?")) {
-          // This multiplies two numbers, there is NO error handling, so when
-          // wrong data is given this just crashes
+        	Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+        	query_pairs = splitQuery(request.replace("multiply?", ""));
 
-          Map<String, String> query_pairs = new LinkedHashMap<String, String>();
-          // extract path parameters
-          query_pairs = splitQuery(request.replace("multiply?", ""));
+        	// Initialize numbers
+        	Integer num1 = null;
+        	Integer num2 = null;
 
-          // extract required fields from parameters
-          Integer num1 = Integer.parseInt(query_pairs.get("num1"));
-          Integer num2 = Integer.parseInt(query_pairs.get("num2"));
+        	// Try to parse numbers from the parameters
+        	try {
+        	  if (query_pairs.containsKey("num1")) {
+        	    num1 = Integer.parseInt(query_pairs.get("num1"));
+        	  }
+        	  if (query_pairs.containsKey("num2")) {
+        	      num2 = Integer.parseInt(query_pairs.get("num2"));
+        	  }
+        	} catch (NumberFormatException e) {
+        	  // Catch if non-integer values were provided
+        	}
 
-          // do math
-          Integer result = num1 * num2;
+        	// Check if both numbers are present and valid
+        	if (num1 != null && num2 != null) {
+        	  // Do math
+        	  Integer result = num1 * num2;
 
-          // Generate response
-          builder.append("HTTP/1.1 200 OK\n");
-          builder.append("Content-Type: text/html; charset=utf-8\n");
-          builder.append("\n");
-          builder.append("Result is: " + result);
+        	  // Generate successful response
+        	  builder.append("HTTP/1.1 200 OK\n");
+        	  builder.append("Content-Type: text/html; charset=utf-8\n");
+        	  builder.append("\n");
+        	  builder.append("Result is: " + result);
+        	} else {
+        	  // Generate error response
+        	  builder.append("HTTP/1.1 400 Bad Request\n");
+        	  builder.append("Content-Type: text/html; charset=utf-8\n");
+        	  builder.append("\n");
+        	  builder.append("Error: Missing or incorrect input for 'num1' and 'num2'. Both must be integers.");
+        	}
+        }
 
-          // TODO: Include error handling here with a correct error code and
-          // a response that makes sense
-
-        } else if (request.contains("github?")) {
+        else if (request.contains("github?")) {
           // pulls the query from the request and runs it with GitHub's REST API
           // check out https://docs.github.com/rest/reference/
           //
