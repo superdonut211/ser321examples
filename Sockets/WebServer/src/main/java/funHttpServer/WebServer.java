@@ -272,8 +272,47 @@ class WebServer {
                 response = ("HTTP/1.1 500 Internal Server Error\nContent-Type: text/html; charset=utf-8\n\nError parsing GitHub response").getBytes();
             }
         }
+        else if (request.contains("calculateArea?")) {
+            Map<String, String> query_pairs = splitQuery(request.replace("calculateArea?", ""));
+
+            try {
+                int length = Integer.parseInt(query_pairs.get("length"));
+                int width = Integer.parseInt(query_pairs.get("width"));
+                int area = length * width;
+
+                builder.append("HTTP/1.1 200 OK\n");
+                builder.append("Content-Type: text/html; charset=utf-8\n");
+                builder.append("\n");
+                builder.append("The area of the rectangle is: " + area);
+            } catch (NumberFormatException e) {
+                builder.append("HTTP/1.1 400 Bad Request\n");
+                builder.append("Content-Type: text/html; charset=utf-8\n");
+                builder.append("\n");
+                builder.append("Error: Both 'length' and 'width' must be valid integers.");
+            }
+        }
 
 
+        else if (request.contains("concatStrings?")) {
+            Map<String, String> query_pairs = splitQuery(request.replace("concatStrings?", ""));
+
+            String firstString = query_pairs.get("first");
+            String secondString = query_pairs.get("second");
+
+            if (firstString != null && secondString != null) {
+                String result = firstString + secondString;
+
+                builder.append("HTTP/1.1 200 OK\n");
+                builder.append("Content-Type: text/html; charset=utf-8\n");
+                builder.append("\n");
+                builder.append("Concatenated string: " + result);
+            } else {
+                builder.append("HTTP/1.1 400 Bad Request\n");
+                builder.append("Content-Type: text/html; charset=utf-8\n");
+                builder.append("\n");
+                builder.append("Error: Both 'first' and 'second' parameters are required.");
+            }
+        }
 
         else {
           // if the request is not recognized at all
