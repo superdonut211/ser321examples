@@ -14,7 +14,8 @@ import java.io.*;
 class SockClient {
   public static void main (String args[]) {
     Socket sock = null;
-    String host = "localhost";
+    //String host = "localhost";
+    String host = "50.18.77.128";
     String message = "HI";
     Integer number = 100;
 
@@ -33,7 +34,8 @@ class SockClient {
     
     try {
       // open the connection
-      sock = new Socket(host, 8888); // connect to host and socket on port 8888
+      //sock = new Socket(host, 8888); // connect to host and socket on port 8888
+      sock = new Socket(host, 7000); // connect to host and socket on port 8888
       // get output channel
       OutputStream out = sock.getOutputStream();
       // create an object output writer (Java only)

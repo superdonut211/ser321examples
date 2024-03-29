@@ -36,25 +36,35 @@ public class Fraction {
    public int getNumerator() {
       return numerator;
    }
+   public static void main(String args[]) {
+	    try {
+	        // Check if exactly two arguments are provided
+	        if (args.length != 2) {
+	            System.out.println("Usage: java Fraction <numerator> <denominator>");
+	            return;
+	        }
+	        
+	        // Parse arguments and set numerator and denominator
+	        int numerator = Integer.parseInt(args[0]);
+	        int denominator = Integer.parseInt(args[1]);
 
-   public static void main (String args[]) {
-      try {
-         // create a new instance
-         // Fraction *frac = [[Fraction alloc] init];
-         Fraction frac = new Fraction();
+	        // Create a new instance of Fraction
+	        Fraction frac = new Fraction();
 
-         // set the values
-         frac.setNumerator(1);
-         frac.setDenominator(3);
+	        // Set the values
+	        frac.setNumerator(numerator);
+	        frac.setDenominator(denominator);
 
-         // print it
-         System.out.print("The fraction is: ");
-         frac.print();
-         System.out.println("");
+	        // Print the fraction
+	        System.out.print("The fraction is: ");
+	        frac.print();
+	        System.out.println("");
 
-      }catch(Exception e) {
-         e.printStackTrace();
-      }
-   }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	}
+
+
 }
 
