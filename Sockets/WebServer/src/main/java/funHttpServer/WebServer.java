@@ -379,12 +379,21 @@ class WebServer {
     }
     return sb.toString();
   }
-  //Utility method to extract value from a string based on start and end delimiters
   private byte[] buildHttpResponse(int statusCode, String statusText, String contentType, String body) {
 	    String httpResponse = "HTTP/1.1 " + statusCode + " " + statusText + "\n" +
 	                          "Content-Type: " + contentType + "; charset=utf-8\n" +
 	                          "\n" + body;
 	    return httpResponse.getBytes();
 	}
+  
+  //Utility method to extract value from a string based on start and end delimiters
+  public static String extractValue(String source, String startDelimiter, String endDelimiter) {
+	int start = source.indexOf(startDelimiter) + startDelimiter.length();
+	int end = source.indexOf(endDelimiter, start);
+	if (start == -1 || end == -1) {
+		return "Not found";
+	}
+	return source.substring(start, end);
+  }
   
 }
