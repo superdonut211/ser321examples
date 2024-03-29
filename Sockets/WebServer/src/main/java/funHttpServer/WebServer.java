@@ -233,31 +233,27 @@ class WebServer {
         }
 
         else if (request.contains("github?")) {
-        	Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+            // Extract query from the request
+            Map<String, String> query_pairs = new LinkedHashMap<String, String>();
             query_pairs = splitQuery(request.replace("github?", ""));
-            String jsonResponse = fetchURL("https://api.github.com/" + query_pairs.get("query"));
             
-            // Simple and very fragile JSON parsing
-            ArrayList<String> repoDetails = new ArrayList<>();
-            String[] repos = jsonResponse.split("\\},\\{");
-            for (String repo : repos) {
-                String full_name = extractValue(repo, "\"full_name\":\"", "\",");
-                String id = extractValue(repo, "\"id\":", ",");
-                String login = extractValue(repo, "\"login\":\"", "\"");
+            // Fetch data from GitHub API
+            String jsonResponse = fetchURL("https://api.github.com/users/" + query_pairs.get("query"));
+
+            // Simple approach to check if user exists by looking for a specific field in the response
+            if (jsonResponse.contains("\"login\":")) {
+                // If the response contains "login", we assume it's a valid user object
+                // Extracting a simple piece of data - the public repos count
+                // This is still fragile and not recommended for production use
+                String publicRepos = extractValue(jsonResponse, "\"public_repos\":", ",");
+                String responseText = "Public repositories count: " + publicRepos;
                 
-                repoDetails.add("Full Name: " + full_name + ", ID: " + id + ", Owner Login: " + login);
+                response = buildHttpResponse(200, "OK", "text/html", responseText);
+            } else {
+                // Handle user not found or API error
+                response = buildHttpResponse(404, "Not Found", "text/html", "User not found or API error.");
             }
-            
-            StringBuilder responseBuilder = new StringBuilder();
-            responseBuilder.append("HTTP/1.1 200 OK\n");
-            responseBuilder.append("Content-Type: text/html; charset=utf-8\n");
-            responseBuilder.append("\n");
-            for (String detail : repoDetails) {
-                responseBuilder.append(detail).append("<br/>");
-            }
-            
-            response = responseBuilder.toString().getBytes();
-      }
+        }
 
         else {
           // if the request is not recognized at all
@@ -384,13 +380,11 @@ class WebServer {
     return sb.toString();
   }
   //Utility method to extract value from a string based on start and end delimiters
-  public static String extractValue(String source, String startDelimiter, String endDelimiter) {
-	int start = source.indexOf(startDelimiter) + startDelimiter.length();
-	int end = source.indexOf(endDelimiter, start);
-	if (start == -1 || end == -1) {
-		return "Not found";
+  private byte[] buildHttpResponse(int statusCode, String statusText, String contentType, String body) {
+	    String httpResponse = "HTTP/1.1 " + statusCode + " " + statusText + "\n" +
+	                          "Content-Type: " + contentType + "; charset=utf-8\n" +
+	                          "\n" + body;
+	    return httpResponse.getBytes();
 	}
-	return source.substring(start, end);
-  }
   
 }
